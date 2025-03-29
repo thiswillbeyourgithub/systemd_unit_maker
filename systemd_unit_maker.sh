@@ -7,7 +7,8 @@
 #
 # Usage:
 #   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY"] [--enable]
+#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY"] 
+#                           [--template "TEMPLATE"] [--enable]
 #
 # Options:
 #   --user          Install for current user (default)
@@ -31,6 +32,7 @@ unit_name=""
 command=""
 description="Systemd service created by systemd_unit_maker.sh"
 frequency="1d"
+template="default"
 enable=false
 
 echo "=== Starting systemd unit maker ==="
@@ -52,6 +54,7 @@ Options:
   --command       Command to run in the service
   --description   Description of the service (optional)
   --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+  --template      Template name to use (optional, default "default")
   --enable        Enable and start the timer after creation (default: false)
 
 Example:
@@ -92,6 +95,10 @@ while [[ $# -gt 0 ]]; do
       frequency="$2"
       shift 2
       ;;
+    --template)
+      template="$2"
+      shift 2
+      ;;
     --enable)
       enable=true
       shift
@@ -110,6 +117,7 @@ echo "Unit name: $unit_name"
 echo "Command: $command"
 echo "Description: $description"
 echo "Timer frequency: $frequency"
+echo "Template: $template"
 echo "Enable after creation: $(if $enable; then echo "Yes"; else echo "No"; fi)"
 echo "=========================="
 
@@ -155,13 +163,13 @@ echo "Timer file will be created at: $timer_file"
 # Copy template files
 echo "Copying template files..."
 if $user_mode; then
-  echo "Using templates: $script_dir/templates/default.service and $script_dir/templates/default.timer"
-  cp "$script_dir/templates/default.service" "$service_file"
-  cp "$script_dir/templates/default.timer" "$timer_file"
+  echo "Using templates: $script_dir/templates/${template}.service and $script_dir/templates/${template}.timer"
+  cp "$script_dir/templates/${template}.service" "$service_file"
+  cp "$script_dir/templates/${template}.timer" "$timer_file"
 else
-  echo "Using templates with sudo: $script_dir/templates/default.service and $script_dir/templates/default.timer"
-  sudo cp "$script_dir/templates/default.service" "$service_file"
-  sudo cp "$script_dir/templates/default.timer" "$timer_file"
+  echo "Using templates with sudo: $script_dir/templates/${template}.service and $script_dir/templates/${template}.timer"
+  sudo cp "$script_dir/templates/${template}.service" "$service_file"
+  sudo cp "$script_dir/templates/${template}.timer" "$timer_file"
 fi
 echo "Template files copied successfully"
 
