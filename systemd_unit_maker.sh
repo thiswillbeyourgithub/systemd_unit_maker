@@ -94,11 +94,11 @@ unit_name=${unit_name// /_}
 # Determine systemd directory based on user/system mode
 if $user_mode; then
   systemd_dir="$HOME/.config/systemd/user"
-  systemctl_cmd="systemctl --user"
+  alias systemctl_cmd="systemctl --user"
   echo "Using user mode: Units will be installed to $systemd_dir"
 else
   systemd_dir="/etc/systemd/system"
-  systemctl_cmd="sudo systemctl"
+  alias systemctl_cmd="sudo systemctl"
   echo "Using system mode: Units will be installed to $systemd_dir"
 fi
 
@@ -157,7 +157,7 @@ echo "Timer file configured successfully"
 
 # Reload systemd daemon
 echo "Reloading systemd daemon..."
-$systemctl_cmd daemon-reload
+systemctl_cmd daemon-reload
 echo "Systemd daemon reloaded"
 
 echo "Systemd units created successfully:"
@@ -169,8 +169,10 @@ read
 
 # Start and enable the timer
 echo "Enabling and starting timer: ${unit_name}.timer"
-$systemctl_cmd enable --now "${unit_name}.timer"
+systemctl_cmd enable --now "${unit_name}.timer"
 echo "Timer enabled and started successfully"
 
 echo "Timer enabled and started. You can check its status with:"
-echo "  $systemctl_cmd status ${unit_name}.timer"
+echo "  systemctl_cmd status ${unit_name}.timer"
+
+unalias systemctl_cmd
