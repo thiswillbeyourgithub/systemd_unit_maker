@@ -1,0 +1,12 @@
+[Unit]
+Description=[[DESCRIPTION]]
+Requires=[[UNIT_NAME]].service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=[[FREQUENCY]]
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
+
