@@ -3,7 +3,7 @@ Description=[[DESCRIPTION]]
 Requires=[[UNIT_NAME]].service
 
 [Timer]
-OnBootSec=[[FREQUENCY]]
+[[TIMER_SPEC]]
 RemainAfterElapse=no
 
 [Install]
