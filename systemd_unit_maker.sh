@@ -239,21 +239,57 @@ echo "Service file configured successfully"
 if $create_timer; then
   echo "Configuring timer file..."
   
-  # Determine timer specification based on whether frequency or calendar is used
+  # Determine timer specifications based on whether frequency or calendar is used
   if [[ -n "$frequency" ]]; then
     timer_spec="OnUnitActiveSec=$frequency"
+    frequency_spec="$frequency"
   elif [[ -n "$calendar" ]]; then
     timer_spec="OnCalendar=$calendar"
+    calendar_spec="$calendar"
   fi
   
+  # Replace standard placeholders first
   if $user_mode; then
     sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
-    sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
     sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
+    
+    # Check which placeholder style the timer template uses
+    if grep -q "\[\[TIMER_SPEC\]\]" "$timer_file"; then
+      echo "Using [[TIMER_SPEC]] placeholder in timer file"
+      sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
+    else
+      # Check for alternative placeholders
+      if [[ -n "$frequency" ]] && grep -q "\[\[FREQUENCY\]\]" "$timer_file"; then
+        echo "Using [[FREQUENCY]] placeholder in timer file"
+        sed -i "s/\[\[FREQUENCY\]\]/$frequency_spec/g" "$timer_file"
+      fi
+      
+      if [[ -n "$calendar" ]] && grep -q "\[\[CALENDAR\]\]" "$timer_file"; then
+        echo "Using [[CALENDAR]] placeholder in timer file"
+        sed -i "s/\[\[CALENDAR\]\]/$calendar_spec/g" "$timer_file"
+      fi
+    fi
   else
+    # System mode with sudo
     sudo sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
-    sudo sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
     sudo sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
+    
+    # Check which placeholder style the timer template uses
+    if sudo grep -q "\[\[TIMER_SPEC\]\]" "$timer_file"; then
+      echo "Using [[TIMER_SPEC]] placeholder in timer file"
+      sudo sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
+    else
+      # Check for alternative placeholders
+      if [[ -n "$frequency" ]] && sudo grep -q "\[\[FREQUENCY\]\]" "$timer_file"; then
+        echo "Using [[FREQUENCY]] placeholder in timer file"
+        sudo sed -i "s/\[\[FREQUENCY\]\]/$frequency_spec/g" "$timer_file"
+      fi
+      
+      if [[ -n "$calendar" ]] && sudo grep -q "\[\[CALENDAR\]\]" "$timer_file"; then
+        echo "Using [[CALENDAR]] placeholder in timer file"
+        sudo sed -i "s/\[\[CALENDAR\]\]/$calendar_spec/g" "$timer_file"
+      fi
+    fi
   fi
 
   echo "Timer file configured successfully"
