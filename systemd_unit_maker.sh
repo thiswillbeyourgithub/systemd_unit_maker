@@ -7,7 +7,7 @@
 #
 # Usage:
 #   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY"]
+#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY"] [--enable]
 #
 # Options:
 #   --user          Install for current user (default)
@@ -16,6 +16,7 @@
 #   --command       Command to run in the service
 #   --description   Description of the service (optional)
 #   --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+#   --enable        Enable and start the timer after creation (default: false)
 #
 # Example:
 #   ./systemd_unit_maker.sh --user --name backup_home --command "tar -czf /tmp/backup.tar.gz /home/user" 
@@ -30,6 +31,7 @@ unit_name=""
 command=""
 description="Systemd service created by systemd_unit_maker.sh"
 frequency="1d"
+enable=false
 
 echo "=== Starting systemd unit maker ==="
 
@@ -61,6 +63,10 @@ while [[ $# -gt 0 ]]; do
       frequency="$2"
       shift 2
       ;;
+    --enable)
+      enable=true
+      shift
+      ;;
     *)
       echo "Unknown option: $1"
       exit 1
@@ -75,6 +81,7 @@ echo "Unit name: $unit_name"
 echo "Command: $command"
 echo "Description: $description"
 echo "Timer frequency: $frequency"
+echo "Enable after creation: $(if $enable; then echo "Yes"; else echo "No"; fi)"
 echo "=========================="
 
 # Validate required arguments
@@ -164,15 +171,18 @@ echo "Systemd units created successfully:"
 echo "  Service: $service_file"
 echo "  Timer: $timer_file"
 echo ""
-echo "Press Enter to start and enable the timer, or Ctrl+C to cancel..."
-read
 
-# Start and enable the timer
-echo "Enabling and starting timer: ${unit_name}.timer"
-systemctl_cmd enable --now "${unit_name}.timer"
-echo "Timer enabled and started successfully"
+if $enable; then
+  # Start and enable the timer
+  echo "Enabling and starting timer: ${unit_name}.timer"
+  systemctl_cmd enable --now "${unit_name}.timer"
+  echo "Timer enabled and started successfully"
 
-echo "Timer enabled and started. You can check its status with:"
-echo "  systemctl_cmd status ${unit_name}.timer"
+  echo "Timer enabled and started. You can check its status with:"
+  echo "  systemctl_cmd status ${unit_name}.timer"
+else
+  echo "Units created but not enabled. To enable and start the timer, run:"
+  echo "  systemctl$(if $user_mode; then echo " --user"; fi) enable --now ${unit_name}.timer"
+fi
 
 unalias systemctl_cmd
