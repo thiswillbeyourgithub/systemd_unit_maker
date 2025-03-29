@@ -26,7 +26,8 @@ The Systemd Unit Maker script allows you to easily create systemd service and ti
 
 ```bash
 ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" \
-                        [--description "DESCRIPTION"] [--frequency "FREQUENCY"] [--enable]
+                        [--description "DESCRIPTION"] [--frequency "FREQUENCY"] \
+                        [--template "TEMPLATE"] [--start] [--enable]
 ```
 
 ### Options
@@ -37,6 +38,8 @@ The Systemd Unit Maker script allows you to easily create systemd service and ti
 - `--command`: Command to run in the service (required)
 - `--description`: Description of the service (optional)
 - `--frequency`: Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+- `--template`: Template name to use (optional, default "default")
+- `--start`: Start the service after creation without enabling it (default: false)
 - `--enable`: Enable and start the timer after creation (default: false)
 
 ### Examples
@@ -68,6 +71,16 @@ sudo ./systemd_unit_maker.sh --system --name log_rotation \
                         --command "/home/user/scripts/cleanup.sh" \
                         --description "Weekly temporary file cleanup" \
                         --frequency "weekly"
+```
+
+#### Create a service with a custom template and start it immediately
+
+```bash
+./systemd_unit_maker.sh --user --name custom_service \
+                        --command "/home/user/scripts/custom_script.sh" \
+                        --description "Custom service using ZSH template" \
+                        --template "zsh" \
+                        --start
 ```
 
 ## Common Timer Frequencies
