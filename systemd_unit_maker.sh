@@ -175,12 +175,20 @@ echo "Template files copied successfully"
 
 # Replace placeholders in the service file
 echo "Configuring service file..."
+
+# Escape ampersands in command to prevent sed from interpreting them
+escaped_command="$command"
+if [[ "$command" == *"&"* ]]; then
+  echo "Command contains ampersands, escaping them for sed..."
+  escaped_command="${command//&/\\&}"
+fi
+
 if $user_mode; then
   sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$service_file"
-  sed -i "s|\[\[COMMAND\]\]|$command|g" "$service_file"
+  sed -i "s|\[\[COMMAND\]\]|$escaped_command|g" "$service_file"
 else
   sudo sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$service_file"
-  sudo sed -i "s|\[\[COMMAND\]\]|$command|g" "$service_file"
+  sudo sed -i "s|\[\[COMMAND\]\]|$escaped_command|g" "$service_file"
 fi
 
 echo "Service file configured successfully"
