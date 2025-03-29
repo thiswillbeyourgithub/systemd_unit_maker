@@ -8,7 +8,7 @@
 # Usage:
 #   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
 #                           [--description "DESCRIPTION"] [--frequency "FREQUENCY"] 
-#                           [--template "TEMPLATE"] [--enable]
+#                           [--template "TEMPLATE"] [--start] [--enable]
 #
 # Options:
 #   --user          Install for current user (default)
@@ -17,6 +17,7 @@
 #   --command       Command to run in the service
 #   --description   Description of the service (optional)
 #   --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+#   --start         Start the service after creation (default: false)
 #   --enable        Enable and start the timer after creation (default: false)
 #
 # Example:
@@ -33,6 +34,7 @@ command=""
 description="Systemd service created by systemd_unit_maker.sh"
 frequency="1d"
 template="default"
+start=false
 enable=false
 
 echo "=== Starting systemd unit maker ==="
@@ -55,6 +57,7 @@ Options:
   --description   Description of the service (optional)
   --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
   --template      Template name to use (optional, default "default")
+  --start         Start the service after creation (default: false)
   --enable        Enable and start the timer after creation (default: false)
 
 Example:
@@ -99,6 +102,10 @@ while [[ $# -gt 0 ]]; do
       template="$2"
       shift 2
       ;;
+    --start)
+      start=true
+      shift
+      ;;
     --enable)
       enable=true
       shift
@@ -118,6 +125,7 @@ echo "Command: $command"
 echo "Description: $description"
 echo "Timer frequency: $frequency"
 echo "Template: $template"
+echo "Start after creation: $(if $start; then echo "Yes"; else echo "No"; fi)"
 echo "Enable after creation: $(if $enable; then echo "Yes"; else echo "No"; fi)"
 echo "=========================="
 
@@ -216,6 +224,13 @@ echo "Systemd units created successfully:"
 echo "  Service: $service_file"
 echo "  Timer: $timer_file"
 echo ""
+
+if $start; then
+  # Start the service without enabling
+  echo "Starting service: ${unit_name}.service"
+  systemctl_cmd start "${unit_name}.service"
+  echo "Service started successfully"
+fi
 
 if $enable; then
   # Start and enable the timer
