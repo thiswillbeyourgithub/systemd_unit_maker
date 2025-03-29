@@ -8,7 +8,6 @@ The Systemd Unit Maker script allows you to easily create systemd service and ti
 
 ## Requirements
 
-- Zsh shell
 - Systemd
 - Appropriate permissions (root for system-wide units)
 
