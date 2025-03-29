@@ -26,7 +26,7 @@ The Systemd Unit Maker script allows you to easily create systemd service and ti
 
 ```bash
 ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" \
-                        [--description "DESCRIPTION"] [--frequency "FREQUENCY"] \
+                        [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] \
                         [--template "TEMPLATE"] [--start] [--enable]
 ```
 
@@ -37,7 +37,9 @@ The Systemd Unit Maker script allows you to easily create systemd service and ti
 - `--name`: Name for the systemd unit (required)
 - `--command`: Command to run in the service (required)
 - `--description`: Description of the service (optional)
-- `--frequency`: Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+- `--frequency`: Timer frequency (e.g. "daily" or "1h") (optional)
+- `--calendar`: Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
+  - Note: Use either `--frequency` OR `--calendar`. If neither is provided, no timer will be created.
 - `--template`: Template name to use (optional, default "default")
 - `--start`: Start the service after creation without enabling it (default: false)
 - `--enable`: Enable and start the timer after creation (default: false)
@@ -73,6 +75,16 @@ sudo ./systemd_unit_maker.sh --system --name log_rotation \
                         --frequency "weekly"
 ```
 
+#### Create a workday reminder service that runs only on weekdays at 8 AM
+
+```bash
+./systemd_unit_maker.sh --user --name workday_reminder \
+                        --command "notify-send 'Time to work!'" \
+                        --description "Workday reminder" \
+                        --calendar "Mon..Fri *-*-* 08:00:00" \
+                        --enable
+```
+
 #### Create a service with a custom template and start it immediately
 
 ```bash
@@ -83,15 +95,24 @@ sudo ./systemd_unit_maker.sh --system --name log_rotation \
                         --start
 ```
 
-## Common Timer Frequencies
+## Timer Specifications
+
+### Common Frequency Values
 
 - `hourly` or `1h`: Run once per hour
 - `daily` or `1d`: Run once per day
 - `weekly`: Run once per week
 - `monthly`: Run once per month
 - `*:0/15`: Run every 15 minutes
-- `Mon,Thu`: Run on Monday and Thursday
 - `yearly` or `annually`: Run once per year
+
+### Calendar Format Examples
+
+- `Mon..Fri *-*-* 08:00:00`: Every weekday at 8 AM
+- `Sat,Sun *-*-* 10:00:00`: Weekends at 10 AM
+- `*-*-* 00:00:00`: Every day at midnight
+- `*-*-01 12:00:00`: First day of every month at noon
+- `2023-12-31 23:59:59`: Specific date and time
 
 For more complex timer expressions, refer to the [systemd.timer documentation](https://www.freedesktop.org/software/systemd/man/systemd.timer.html).
 
