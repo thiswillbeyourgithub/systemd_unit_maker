@@ -82,41 +82,6 @@ sudo ./systemd_unit_maker.sh --system --name log_rotation \
 
 For more complex timer expressions, refer to the [systemd.timer documentation](https://www.freedesktop.org/software/systemd/man/systemd.timer.html).
 
-## Managing Created Units
-
-After creating your units, you can manage them with standard systemd commands:
-
-### For user units:
-
-```bash
-# Check timer status
-systemctl --user status unit_name.timer
-
-# Stop timer
-systemctl --user stop unit_name.timer
-
-# Disable timer (prevent from starting at boot)
-systemctl --user disable unit_name.timer
-
-# Run the service immediately (without waiting for timer)
-systemctl --user start unit_name.service
-```
-
-### For system units:
-
-```bash
-# Check timer status
-sudo systemctl status unit_name.timer
-
-# Stop timer
-sudo systemctl stop unit_name.timer
-
-# Disable timer (prevent from starting at boot)
-sudo systemctl disable unit_name.timer
-
-# Run the service immediately (without waiting for timer)
-sudo systemctl start unit_name.service
-```
 
 ## Troubleshooting
 
