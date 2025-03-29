@@ -7,7 +7,7 @@
 #
 # Usage:
 #   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY"] 
+#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] 
 #                           [--template "TEMPLATE"] [--start] [--enable]
 #
 # Options:
@@ -16,7 +16,9 @@
 #   --name          Name for the systemd unit
 #   --command       Command to run in the service
 #   --description   Description of the service (optional)
-#   --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+#   --frequency     Timer frequency (e.g. "daily" or "1h") (optional)
+#   --calendar      Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
+#                   Note: Use either --frequency OR --calendar. If neither is provided, no timer will be created.
 #   --start         Start the service after creation (default: false)
 #   --enable        Enable and start the timer after creation (default: false)
 #
@@ -32,10 +34,12 @@ user_mode=true
 unit_name=""
 command=""
 description="Systemd service created by systemd_unit_maker.sh"
-frequency="1d"
+frequency=""
+calendar=""
 template="default"
 start=false
 enable=false
+create_timer=false
 
 echo "=== Starting systemd unit maker ==="
 
@@ -46,7 +50,7 @@ systemd_unit_maker.sh - Creates systemd service and timer units from a command
 
 Usage:
   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-                         [--description "DESCRIPTION"] [--frequency "FREQUENCY"] [--enable]
+                         [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] [--enable]
 
 Options:
   --help, -h      Show this help message and exit
@@ -55,14 +59,19 @@ Options:
   --name          Name for the systemd unit
   --command       Command to run in the service
   --description   Description of the service (optional)
-  --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+  --frequency     Timer frequency (e.g. "daily" or "1h") (optional)
+  --calendar      Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
+                  Note: Use either --frequency OR --calendar. If neither is provided, no timer will be created.
   --template      Template name to use (optional, default "default")
   --start         Start the service after creation (default: false)
   --enable        Enable and start the timer after creation (default: false)
 
-Example:
+Examples:
   ./systemd_unit_maker.sh --user --name backup_home --command "tar -czf /tmp/backup.tar.gz /home/user" \\
                          --description "Daily home backup" --frequency "1d"
+  
+  ./systemd_unit_maker.sh --user --name workday_reminder --command "notify-send 'Time to work!'" \\
+                         --description "Workday reminder" --calendar "Mon..Fri *-*-* 08:00:00"
 EOF
 }
 
@@ -96,6 +105,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     --frequency)
       frequency="$2"
+      create_timer=true
+      shift 2
+      ;;
+    --calendar)
+      calendar="$2"
+      create_timer=true
       shift 2
       ;;
     --template)
@@ -123,7 +138,13 @@ echo "Installation mode: $(if $user_mode; then echo "User"; else echo "System"; 
 echo "Unit name: $unit_name"
 echo "Command: $command"
 echo "Description: $description"
-echo "Timer frequency: $frequency"
+if [[ -n "$frequency" ]]; then
+  echo "Timer frequency: $frequency"
+elif [[ -n "$calendar" ]]; then
+  echo "Timer calendar: $calendar"
+else
+  echo "Timer: Not creating timer"
+fi
 echo "Template: $template"
 echo "Start after creation: $(if $start; then echo "Yes"; else echo "No"; fi)"
 echo "Enable after creation: $(if $enable; then echo "Yes"; else echo "No"; fi)"
@@ -165,22 +186,34 @@ script_dir="$(dirname "$0")"
 
 # Service and timer file paths
 service_file="$systemd_dir/${unit_name}.service"
-timer_file="$systemd_dir/${unit_name}.timer"
 echo "Service file will be created at: $service_file"
-echo "Timer file will be created at: $timer_file"
 
-# Copy template files
-echo "Copying template files..."
+# Copy service template file
+echo "Copying service template file..."
 if $user_mode; then
-  echo "Using templates: $script_dir/templates/${template}.service and $script_dir/templates/${template}.timer"
+  echo "Using template: $script_dir/templates/${template}.service"
   cp "$script_dir/templates/${template}.service" "$service_file"
-  cp "$script_dir/templates/${template}.timer" "$timer_file"
 else
-  echo "Using templates with sudo: $script_dir/templates/${template}.service and $script_dir/templates/${template}.timer"
+  echo "Using template with sudo: $script_dir/templates/${template}.service"
   sudo cp "$script_dir/templates/${template}.service" "$service_file"
-  sudo cp "$script_dir/templates/${template}.timer" "$timer_file"
 fi
-echo "Template files copied successfully"
+echo "Service template file copied successfully"
+
+# Copy timer template file if needed
+if $create_timer; then
+  timer_file="$systemd_dir/${unit_name}.timer"
+  echo "Timer file will be created at: $timer_file"
+  
+  echo "Copying timer template file..."
+  if $user_mode; then
+    echo "Using template: $script_dir/templates/${template}.timer"
+    cp "$script_dir/templates/${template}.timer" "$timer_file"
+  else
+    echo "Using template with sudo: $script_dir/templates/${template}.timer"
+    sudo cp "$script_dir/templates/${template}.timer" "$timer_file"
+  fi
+  echo "Timer template file copied successfully"
+fi
 
 # Replace placeholders in the service file
 echo "Configuring service file..."
@@ -202,28 +235,40 @@ fi
 
 echo "Service file configured successfully"
 
-# Replace placeholders in the timer file
-echo "Configuring timer file..."
-if $user_mode; then
-  sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
-  sed -i "s/\[\[FREQUENCY\]\]/$frequency/g" "$timer_file"
-  sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
-else
-  sudo sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
-  sudo sed -i "s/\[\[FREQUENCY\]\]/$frequency/g" "$timer_file"
-  sudo sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
-fi
+# Replace placeholders in the timer file if it exists
+if $create_timer; then
+  echo "Configuring timer file..."
+  
+  # Determine timer specification based on whether frequency or calendar is used
+  if [[ -n "$frequency" ]]; then
+    timer_spec="OnUnitActiveSec=$frequency"
+  elif [[ -n "$calendar" ]]; then
+    timer_spec="OnCalendar=$calendar"
+  fi
+  
+  if $user_mode; then
+    sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
+    sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
+    sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
+  else
+    sudo sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
+    sudo sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
+    sudo sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
+  fi
 
-echo "Timer file configured successfully"
+  echo "Timer file configured successfully"
+fi
 
 # Reload systemd daemon
 echo "Reloading systemd daemon..."
 systemctl_cmd daemon-reload
 echo "Systemd daemon reloaded"
 
-echo "Systemd units created successfully:"
+echo "Systemd unit created successfully:"
 echo "  Service: $service_file"
-echo "  Timer: $timer_file"
+if $create_timer; then
+  echo "  Timer: $timer_file"
+fi
 echo ""
 
 if $start; then
@@ -233,16 +278,16 @@ if $start; then
   echo "Service started successfully"
 fi
 
-if $enable; then
+if $enable && $create_timer; then
   # Start and enable the timer
   echo "Enabling and starting timer: ${unit_name}.timer"
   systemctl_cmd enable --now "${unit_name}.timer"
   echo "Timer enabled and started successfully"
 
   echo "Timer enabled and started. You can check its status with:"
-  echo "  systemctl_cmd status ${unit_name}.timer"
-else
-  echo "Units created but not enabled. To enable and start the timer, run:"
+  echo "  systemctl$(if $user_mode; then echo " --user"; fi) status ${unit_name}.timer"
+elif $create_timer; then
+  echo "Timer created but not enabled. To enable and start the timer, run:"
   echo "  systemctl$(if $user_mode; then echo " --user"; fi) enable --now ${unit_name}.timer"
 fi
 

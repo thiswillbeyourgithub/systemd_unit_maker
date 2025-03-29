@@ -4,7 +4,7 @@ Requires=[[UNIT_NAME]].service
 
 [Timer]
 OnBootSec=5min
-OnUnitActiveSec=[[FREQUENCY]]
+[[TIMER_SPEC]]
 AccuracySec=1min
 
 [Install]
