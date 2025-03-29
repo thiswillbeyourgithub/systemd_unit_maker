@@ -140,8 +140,9 @@ if [[ -z "$command" ]]; then
   exit 1
 fi
 
-# Replace spaces with underscores in unit name
+# Replace spaces with underscores in unit name and convert to lowercase
 unit_name=${unit_name// /_}
+unit_name=${unit_name:l}  # zsh syntax for lowercase conversion
 
 # Determine systemd directory based on user/system mode
 if $user_mode; then
