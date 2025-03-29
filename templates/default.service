@@ -1,0 +1,10 @@
+[Unit]
+Description=[[DESCRIPTION]]
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=zsh -c 'source .zshrc && [[COMMAND]]'
+
+[Install]
+WantedBy=default.target
