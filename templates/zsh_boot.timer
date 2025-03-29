@@ -1,0 +1,11 @@
+[Unit]
+Description=[[DESCRIPTION]]
+Requires=[[UNIT_NAME]].service
+
+[Timer]
+OnBootSec=[[FREQUENCY]]
+RemainAfterElapse=no
+
+[Install]
+WantedBy=timers.target
+
