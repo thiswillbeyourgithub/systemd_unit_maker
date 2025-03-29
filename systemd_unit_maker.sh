@@ -35,10 +35,39 @@ enable=false
 
 echo "=== Starting systemd unit maker ==="
 
+# Function to print usage information
+print_help() {
+  cat << EOF
+systemd_unit_maker.sh - Creates systemd service and timer units from a command
+
+Usage:
+  ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
+                         [--description "DESCRIPTION"] [--frequency "FREQUENCY"] [--enable]
+
+Options:
+  --help, -h      Show this help message and exit
+  --user          Install for current user (default)
+  --system        Install system-wide (requires root)
+  --name          Name for the systemd unit
+  --command       Command to run in the service
+  --description   Description of the service (optional)
+  --frequency     Timer frequency (e.g. "daily" or "1h") (optional, default "1d")
+  --enable        Enable and start the timer after creation (default: false)
+
+Example:
+  ./systemd_unit_maker.sh --user --name backup_home --command "tar -czf /tmp/backup.tar.gz /home/user" \\
+                         --description "Daily home backup" --frequency "1d"
+EOF
+}
+
 # Parse arguments
 echo "Parsing command line arguments..."
 while [[ $# -gt 0 ]]; do
   case $1 in
+    -h|--help)
+      print_help
+      exit 0
+      ;;
     --user)
       user_mode=true
       shift
