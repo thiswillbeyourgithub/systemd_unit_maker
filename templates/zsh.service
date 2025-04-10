@@ -1,4 +1,3 @@
-# Made with systemd_unit_maker
 [Unit]
 Description=[[DESCRIPTION]]
 After=network-online.target
