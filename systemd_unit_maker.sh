@@ -36,7 +36,7 @@ set -e
 user_mode=true
 unit_name=""
 command=""
-description="Systemd service created by systemd_unit_maker.sh"
+description="Service created by systemd unit maker"
 frequency=""
 calendar=""
 template="default"
