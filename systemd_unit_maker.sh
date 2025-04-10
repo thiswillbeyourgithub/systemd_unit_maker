@@ -1,5 +1,8 @@
 #!/bin/zsh
 
+# Script version
+VERSION="1.0.0"
+
 # Enable for debugging
 # set -x
 #
@@ -54,6 +57,7 @@ Usage:
 
 Options:
   --help, -h      Show this help message and exit
+  --version, -v   Show version information and exit
   --user          Install for current user (default)
   --system        Install system-wide (requires root)
   --name          Name for the systemd unit
@@ -81,6 +85,10 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
       print_help
+      exit 0
+      ;;
+    -v|--version)
+      echo "systemd_unit_maker.sh version $VERSION"
       exit 0
       ;;
     --user)
