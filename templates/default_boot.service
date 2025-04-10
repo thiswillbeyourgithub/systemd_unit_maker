@@ -1,0 +1,10 @@
+[Unit]
+Description=[[DESCRIPTION]]
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=[[COMMAND]]
+
+[Install]
+WantedBy=default.target
