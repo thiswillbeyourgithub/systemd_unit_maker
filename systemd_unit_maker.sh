@@ -132,6 +132,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Check if template contains "boot" and if so, set create_timer=true
+if [[ "$template" == *"boot"* ]] && [[ "$create_timer" == "false" ]]; then
+  create_timer=true
+  # Set a default frequency if none was provided
+  if [[ -z "$frequency" ]] && [[ -z "$calendar" ]]; then
+    frequency="1d"  # Default to daily if no schedule specified
+  fi
+  echo "Boot template detected: Timer will be created automatically"
+fi
+
 # Display configuration summary
 echo "=== Configuration Summary ==="
 echo "Installation mode: $(if $user_mode; then echo "User"; else echo "System"; fi)"
@@ -142,6 +152,8 @@ if [[ -n "$frequency" ]]; then
   echo "Timer frequency: $frequency"
 elif [[ -n "$calendar" ]]; then
   echo "Timer calendar: $calendar"
+elif [[ "$create_timer" == "true" ]]; then
+  echo "Timer: Creating timer for boot template"
 else
   echo "Timer: Not creating timer"
 fi
@@ -235,6 +247,12 @@ if $create_timer; then
   elif [[ -n "$calendar" ]]; then
     timer_spec="OnCalendar=$calendar"
     calendar_spec="$calendar"
+  elif [[ "$template" == *"boot"* ]]; then
+    # For boot templates with no specified timing, use the boot template's default
+    # This will rely on the template having the correct timing specifications
+    timer_spec=""
+    frequency_spec=""
+    calendar_spec=""
   fi
   
   # Replace standard placeholders
