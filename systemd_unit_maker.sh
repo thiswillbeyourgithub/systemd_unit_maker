@@ -314,6 +314,23 @@ done
 
 echo "Files edited successfully"
 
+# Function to add version header to a file
+add_version_header() {
+  local file="$1"
+  local temp_file="${file}.tmp"
+  
+  echo "# Made with systemd_unit_maker v$VERSION" > "$temp_file"
+  cat "$file" >> "$temp_file"
+  mv "$temp_file" "$file"
+}
+
+# Add version headers to all edited files
+echo "Adding version headers to files..."
+add_version_header "$temp_service_file"
+if $create_timer; then
+  add_version_header "$temp_timer_file"
+fi
+
 # Function to check if file exists and show diff
 check_and_confirm_overwrite() {
   local src="$1"
