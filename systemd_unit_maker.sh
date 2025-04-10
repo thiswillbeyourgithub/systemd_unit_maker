@@ -36,7 +36,7 @@ set -e
 user_mode=true
 unit_name=""
 command=""
-description="Service created by systemd unit maker"
+description="Systemd service created by systemd_unit_maker"
 frequency=""
 calendar=""
 template="default"
@@ -319,7 +319,7 @@ add_version_header() {
   local file="$1"
   local temp_file="${file}.tmp"
   
-  echo "# Made with systemd_unit_maker v$VERSION" > "$temp_file"
+  echo "# Created by systemd_unit_maker v$VERSION" > "$temp_file"
   cat "$file" >> "$temp_file"
   mv "$temp_file" "$file"
 }
