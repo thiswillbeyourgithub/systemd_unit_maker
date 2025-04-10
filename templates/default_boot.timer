@@ -3,7 +3,6 @@ Description=[[DESCRIPTION]]
 Requires=[[UNIT_NAME]].service
 
 [Timer]
-[[TIMER_SPEC]]
 OnBootSec=10s
 RemainAfterElapse=no
 
