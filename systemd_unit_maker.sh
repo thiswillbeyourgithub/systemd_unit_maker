@@ -184,39 +184,33 @@ echo "Systemd directory ready"
 # Get the directory of this script
 script_dir="$(dirname "$0")"
 
-# Service and timer file paths
+# Create temporary directory for editing files
+temp_dir=$(mktemp -d)
+echo "Created temporary directory: $temp_dir"
+
+# Define temp and final file paths
+temp_service_file="$temp_dir/${unit_name}.service"
 service_file="$systemd_dir/${unit_name}.service"
 echo "Service file will be created at: $service_file"
 
-# Copy service template file
-echo "Copying service template file..."
-if $user_mode; then
-  echo "Using template: $script_dir/templates/${template}.service"
-  cp "$script_dir/templates/${template}.service" "$service_file"
-else
-  echo "Using template with sudo: $script_dir/templates/${template}.service"
-  sudo cp "$script_dir/templates/${template}.service" "$service_file"
-fi
-echo "Service template file copied successfully"
+# Copy service template file to temp directory
+echo "Copying service template file to temp directory..."
+cp "$script_dir/templates/${template}.service" "$temp_service_file"
+echo "Service template file copied to temp directory"
 
-# Copy timer template file if needed
+# Define temp timer file if needed
 if $create_timer; then
+  temp_timer_file="$temp_dir/${unit_name}.timer"
   timer_file="$systemd_dir/${unit_name}.timer"
   echo "Timer file will be created at: $timer_file"
   
-  echo "Copying timer template file..."
-  if $user_mode; then
-    echo "Using template: $script_dir/templates/${template}.timer"
-    cp "$script_dir/templates/${template}.timer" "$timer_file"
-  else
-    echo "Using template with sudo: $script_dir/templates/${template}.timer"
-    sudo cp "$script_dir/templates/${template}.timer" "$timer_file"
-  fi
-  echo "Timer template file copied successfully"
+  echo "Copying timer template file to temp directory..."
+  cp "$script_dir/templates/${template}.timer" "$temp_timer_file"
+  echo "Timer template file copied to temp directory"
 fi
 
 # Replace placeholders in the service file
-echo "Configuring service file..."
+echo "Configuring temporary service file..."
 
 # Escape ampersands in command to prevent sed from interpreting them
 escaped_command="$command"
@@ -225,19 +219,14 @@ if [[ "$command" == *"&"* ]]; then
   escaped_command="${command//&/\\&}"
 fi
 
-if $user_mode; then
-  sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$service_file"
-  sed -i "s|\[\[COMMAND\]\]|$escaped_command|g" "$service_file"
-else
-  sudo sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$service_file"
-  sudo sed -i "s|\[\[COMMAND\]\]|$escaped_command|g" "$service_file"
-fi
+sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$temp_service_file"
+sed -i "s|\[\[COMMAND\]\]|$escaped_command|g" "$temp_service_file"
 
-echo "Service file configured successfully"
+echo "Temporary service file configured with placeholders"
 
 # Replace placeholders in the timer file if it exists
 if $create_timer; then
-  echo "Configuring timer file..."
+  echo "Configuring temporary timer file..."
   
   # Determine timer specifications based on whether frequency or calendar is used
   if [[ -n "$frequency" ]]; then
@@ -248,52 +237,63 @@ if $create_timer; then
     calendar_spec="$calendar"
   fi
   
-  # Replace standard placeholders first
-  if $user_mode; then
-    sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
-    sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
-    
-    # Check which placeholder style the timer template uses
-    if grep -q "\[\[TIMER_SPEC\]\]" "$timer_file"; then
-      echo "Using [[TIMER_SPEC]] placeholder in timer file"
-      sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
-    else
-      # Check for alternative placeholders
-      if [[ -n "$frequency" ]] && grep -q "\[\[FREQUENCY\]\]" "$timer_file"; then
-        echo "Using [[FREQUENCY]] placeholder in timer file"
-        sed -i "s/\[\[FREQUENCY\]\]/$frequency_spec/g" "$timer_file"
-      fi
-      
-      if [[ -n "$calendar" ]] && grep -q "\[\[CALENDAR\]\]" "$timer_file"; then
-        echo "Using [[CALENDAR]] placeholder in timer file"
-        sed -i "s/\[\[CALENDAR\]\]/$calendar_spec/g" "$timer_file"
-      fi
-    fi
+  # Replace standard placeholders
+  sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$temp_timer_file"
+  sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$temp_timer_file"
+  
+  # Check which placeholder style the timer template uses
+  if grep -q "\[\[TIMER_SPEC\]\]" "$temp_timer_file"; then
+    echo "Using [[TIMER_SPEC]] placeholder in timer file"
+    sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$temp_timer_file"
   else
-    # System mode with sudo
-    sudo sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$timer_file"
-    sudo sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$timer_file"
+    # Check for alternative placeholders
+    if [[ -n "$frequency" ]] && grep -q "\[\[FREQUENCY\]\]" "$temp_timer_file"; then
+      echo "Using [[FREQUENCY]] placeholder in timer file"
+      sed -i "s/\[\[FREQUENCY\]\]/$frequency_spec/g" "$temp_timer_file"
+    fi
     
-    # Check which placeholder style the timer template uses
-    if sudo grep -q "\[\[TIMER_SPEC\]\]" "$timer_file"; then
-      echo "Using [[TIMER_SPEC]] placeholder in timer file"
-      sudo sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$timer_file"
-    else
-      # Check for alternative placeholders
-      if [[ -n "$frequency" ]] && sudo grep -q "\[\[FREQUENCY\]\]" "$timer_file"; then
-        echo "Using [[FREQUENCY]] placeholder in timer file"
-        sudo sed -i "s/\[\[FREQUENCY\]\]/$frequency_spec/g" "$timer_file"
-      fi
-      
-      if [[ -n "$calendar" ]] && sudo grep -q "\[\[CALENDAR\]\]" "$timer_file"; then
-        echo "Using [[CALENDAR]] placeholder in timer file"
-        sudo sed -i "s/\[\[CALENDAR\]\]/$calendar_spec/g" "$timer_file"
-      fi
+    if [[ -n "$calendar" ]] && grep -q "\[\[CALENDAR\]\]" "$temp_timer_file"; then
+      echo "Using [[CALENDAR]] placeholder in timer file"
+      sed -i "s/\[\[CALENDAR\]\]/$calendar_spec/g" "$temp_timer_file"
     fi
   fi
 
-  echo "Timer file configured successfully"
+  echo "Temporary timer file configured with placeholders"
 fi
+
+# Determine which editor to use
+editor_cmd="nano"
+if command -v nvim &> /dev/null; then
+  editor_cmd="nvim"
+fi
+
+# Open files in editor for manual editing
+edit_files=("$temp_service_file")
+if $create_timer; then
+  edit_files+=("$temp_timer_file")
+fi
+
+echo "Opening files for editing with $editor_cmd..."
+echo "Please review and edit the files, then save and exit the editor to continue."
+$editor_cmd -p "${edit_files[@]}"
+echo "Files edited successfully"
+
+# Copy edited files to their final destinations
+echo "Copying edited files to final destinations..."
+
+if $user_mode; then
+  cp "$temp_service_file" "$service_file"
+  if $create_timer; then
+    cp "$temp_timer_file" "$timer_file"
+  fi
+else
+  sudo cp "$temp_service_file" "$service_file"
+  if $create_timer; then
+    sudo cp "$temp_timer_file" "$timer_file"
+  fi
+fi
+
+echo "Files installed successfully"
 
 # Reload systemd daemon
 echo "Reloading systemd daemon..."
@@ -306,6 +306,11 @@ if $create_timer; then
   echo "  Timer: $timer_file"
 fi
 echo ""
+
+# Clean up temporary directory
+echo "Cleaning up temporary files..."
+rm -rf "$temp_dir"
+echo "Temporary files removed"
 
 if $start; then
   # Start the service without enabling
