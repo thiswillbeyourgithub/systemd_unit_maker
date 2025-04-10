@@ -306,22 +306,76 @@ done
 
 echo "Files edited successfully"
 
+# Function to check if file exists and show diff
+check_and_confirm_overwrite() {
+  local src="$1"
+  local dest="$2"
+  local need_sudo="$3"
+  local file_type="$4"
+
+  if [[ -f "$dest" ]]; then
+    echo "Warning: $file_type file already exists at $dest"
+    echo "Showing diff between existing and new file:"
+    echo "----------------------------------------"
+    
+    # Create a temporary copy of the existing file for comparison
+    local existing_temp=$(mktemp)
+    if [[ "$need_sudo" == "true" ]]; then
+      sudo cat "$dest" > "$existing_temp"
+    else
+      cat "$dest" > "$existing_temp"
+    fi
+    
+    # Show the diff
+    diff -u "$existing_temp" "$src" || true
+    echo "----------------------------------------"
+    
+    # Ask for confirmation
+    read -q "REPLY?Do you want to overwrite the existing file? (y/n) "
+    echo ""
+    
+    # Clean up temp file
+    rm -f "$existing_temp"
+    
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      echo "Proceeding with overwrite..."
+      return 0
+    else
+      echo "Skipping overwrite of $dest"
+      return 1
+    fi
+  else
+    # File doesn't exist, no confirmation needed
+    return 0
+  fi
+}
+
 # Copy edited files to their final destinations
 echo "Copying edited files to final destinations..."
 
 if $user_mode; then
-  cp "$temp_service_file" "$service_file"
+  if check_and_confirm_overwrite "$temp_service_file" "$service_file" "false" "Service"; then
+    cp "$temp_service_file" "$service_file"
+  fi
+  
   if $create_timer; then
-    cp "$temp_timer_file" "$timer_file"
+    if check_and_confirm_overwrite "$temp_timer_file" "$timer_file" "false" "Timer"; then
+      cp "$temp_timer_file" "$timer_file"
+    fi
   fi
 else
-  sudo cp "$temp_service_file" "$service_file"
+  if check_and_confirm_overwrite "$temp_service_file" "$service_file" "true" "Service"; then
+    sudo cp "$temp_service_file" "$service_file"
+  fi
+  
   if $create_timer; then
-    sudo cp "$temp_timer_file" "$timer_file"
+    if check_and_confirm_overwrite "$temp_timer_file" "$timer_file" "true" "Timer"; then
+      sudo cp "$temp_timer_file" "$timer_file"
+    fi
   fi
 fi
 
-echo "Files installed successfully"
+echo "Files installation completed"
 
 # Reload systemd daemon
 echo "Reloading systemd daemon..."
