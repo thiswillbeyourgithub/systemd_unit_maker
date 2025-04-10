@@ -276,6 +276,16 @@ fi
 echo "Opening files for editing with $editor_cmd..."
 echo "Please review and edit the files, then save and exit the editor to continue."
 $editor_cmd -p "${edit_files[@]}"
+
+# Check if any of the files are empty after editing
+for file in "${edit_files[@]}"; do
+  if [[ ! -s "$file" ]]; then
+    echo "Error: File $file is empty after editing. Aborting."
+    rm -rf "$temp_dir"
+    exit 1
+  fi
+done
+
 echo "Files edited successfully"
 
 # Copy edited files to their final destinations
