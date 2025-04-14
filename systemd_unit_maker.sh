@@ -14,8 +14,6 @@ user_mode=true
 unit_name=""
 command=""
 description="Systemd service created by systemd_unit_maker"
-frequency=""
-calendar=""
 template="default"
 start=false
 enable=false
@@ -83,16 +81,6 @@ while [[ $# -gt 0 ]]; do
       description="$2"
       shift 2
       ;;
-    --frequency)
-      frequency="$2"
-      create_timer=true
-      shift 2
-      ;;
-    --calendar)
-      calendar="$2"
-      create_timer=true
-      shift 2
-      ;;
     --template)
       template="$2"
       shift 2
@@ -118,10 +106,6 @@ done
 
 # Check if template contains "boot" and --no-timer wasn't specified
 if [[ "$template" == *"boot"* ]] && [[ "$create_timer" == "true" ]]; then
-  # Set a default frequency if none was provided
-  if [[ -z "$frequency" ]] && [[ -z "$calendar" ]]; then
-    frequency="1d"  # Default to daily if no schedule specified
-  fi
   echo "Boot template detected: Timer will be created with boot configuration"
 fi
 
@@ -136,12 +120,12 @@ echo "Installation mode: $(if $user_mode; then echo "User"; else echo "System"; 
 echo "Unit name: $unit_name"
 echo "Command: $command"
 echo "Description: $description"
-if [[ -n "$frequency" ]]; then
-  echo "Timer frequency: $frequency"
-elif [[ -n "$calendar" ]]; then
-  echo "Timer calendar: $calendar"
-elif [[ "$create_timer" == "true" ]]; then
-  echo "Timer: Creating timer for boot template"
+if [[ "$create_timer" == "true" ]]; then
+  if [[ "$template" == *"boot"* ]]; then
+    echo "Timer: Creating timer for boot template"
+  else
+    echo "Timer: Creating default timer"
+  fi
 else
   echo "Timer: Not creating timer"
 fi
@@ -253,20 +237,16 @@ if $create_timer; then
   # Replace standard placeholders
   sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$temp_timer_file"
   
-  # Add appropriate OnCalendar or OnUnitActiveSec line based on user input
-  if [[ -n "$frequency" ]]; then
-    # Insert the OnUnitActiveSec line before the [Install] section
-    sed -i "/\[Install\]/i OnUnitActiveSec=$frequency" "$temp_timer_file"
-    echo "Added timer frequency: OnUnitActiveSec=$frequency"
-  elif [[ -n "$calendar" ]]; then
-    # Insert the OnCalendar line before the [Install] section
-    sed -i "/\[Install\]/i OnCalendar=$calendar" "$temp_timer_file"
-    echo "Added timer calendar: OnCalendar=$calendar"
-  elif [[ "$template" == *"boot"* ]]; then
+  # Add appropriate timer configuration
+  if [[ "$template" == *"boot"* ]]; then
     # For boot templates, add OnBootSec
     sed -i "/\[Install\]/i OnBootSec=5min" "$temp_timer_file"
     sed -i "/\[Install\]/i OnUnitActiveSec=1d" "$temp_timer_file"
     echo "Added boot timer configuration"
+  else
+    # Add a default daily timer
+    sed -i "/\[Install\]/i OnUnitActiveSec=1d" "$temp_timer_file"
+    echo "Added default daily timer configuration"
   fi
 
   echo "Temporary timer file configured with placeholders"
