@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # Script version
-VERSION="2.0.0"
+VERSION="2.1.0"
 
 # Enable for debugging
 # set -x
@@ -11,7 +11,7 @@ VERSION="2.0.0"
 # Usage:
 #   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
 #                           [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] 
-#                           [--template "TEMPLATE"] [--start] [--enable]
+#                           [--template "TEMPLATE"] [--start] [--enable] [--no-timer]
 #
 # Options:
 #   --user          Install for current user (default)
@@ -21,7 +21,8 @@ VERSION="2.0.0"
 #   --description   Description of the service (optional)
 #   --frequency     Timer frequency (e.g. "daily" or "1h") (optional)
 #   --calendar      Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
-#                   Note: Use either --frequency OR --calendar. If neither is provided, no timer will be created.
+#                   Note: Use either --frequency OR --calendar.
+#   --no-timer      Do not create a timer unit, only create the service unit
 #   --start         Start the service after creation (default: false)
 #   --enable        Enable and start the timer after creation (default: false)
 #
@@ -42,7 +43,7 @@ calendar=""
 template="default"
 start=false
 enable=false
-create_timer=false
+create_timer=true  # Default to creating a timer
 
 echo "=== Starting systemd unit maker ==="
 
@@ -53,7 +54,8 @@ systemd_unit_maker.sh - Creates systemd service and timer units from a command
 
 Usage:
   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-                         [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] [--enable]
+                         [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] 
+                         [--enable] [--no-timer]
 
 Options:
   --help, -h      Show this help message and exit
@@ -65,10 +67,11 @@ Options:
   --description   Description of the service (optional)
   --frequency     Timer frequency (e.g. "daily" or "1h") (optional)
   --calendar      Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
-                  Note: Use either --frequency OR --calendar. If neither is provided, no timer will be created.
+                  Note: Use either --frequency OR --calendar.
   --template      Template name to use (optional, default "default")
   --start         Start the service after creation (default: false)
   --enable        Enable and start the timer after creation (default: false)
+  --no-timer      Do not create a timer unit, only create the service unit
 
 Examples:
   ./systemd_unit_maker.sh --user --name backup_home --command "tar -czf /tmp/backup.tar.gz /home/user" \\
@@ -133,6 +136,10 @@ while [[ $# -gt 0 ]]; do
       enable=true
       shift
       ;;
+    --no-timer)
+      create_timer=false
+      shift
+      ;;
     *)
       echo "Unknown option: $1"
       exit 1
@@ -140,14 +147,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Check if template contains "boot" and if so, set create_timer=true
-if [[ "$template" == *"boot"* ]] && [[ "$create_timer" == "false" ]]; then
-  create_timer=true
+# Check if template contains "boot" and --no-timer wasn't specified
+if [[ "$template" == *"boot"* ]] && [[ "$create_timer" == "true" ]]; then
   # Set a default frequency if none was provided
   if [[ -z "$frequency" ]] && [[ -z "$calendar" ]]; then
     frequency="1d"  # Default to daily if no schedule specified
   fi
-  echo "Boot template detected: Timer will be created automatically"
+  echo "Boot template detected: Timer will be created with boot configuration"
+fi
+
+# Honor --no-timer regardless of other settings
+if [[ "$create_timer" == "false" ]]; then
+  echo "No timer will be created (--no-timer specified)"
 fi
 
 # Display configuration summary
@@ -224,9 +235,24 @@ if $create_timer; then
   timer_file="$systemd_dir/${unit_name}.timer"
   echo "Timer file will be created at: $timer_file"
   
-  echo "Copying timer template file to temp directory..."
-  cp "$script_dir/templates/${template}.timer" "$temp_timer_file"
-  echo "Timer template file copied to temp directory"
+  echo "Creating timer file with default template..."
+  cat > "$temp_timer_file" << EOT
+[Unit]
+Description=[[DESCRIPTION]]
+Requires=${unit_name}.service
+
+[Timer]
+# AccuracySec=1min
+# OnBootSec=5min
+# every hour:
+# OnCalendar=*-*-* *:00:00
+# every day at 2 am
+# OnCalendar=*-*-* 02:00:00
+
+[Install]
+WantedBy=timers.target
+EOT
+  echo "Timer file created with default template"
 fi
 
 # Replace placeholders in the service file
@@ -248,40 +274,23 @@ echo "Temporary service file configured with placeholders"
 if $create_timer; then
   echo "Configuring temporary timer file..."
   
-  # Determine timer specifications based on whether frequency or calendar is used
-  if [[ -n "$frequency" ]]; then
-    timer_spec="OnUnitActiveSec=$frequency"
-    frequency_spec="$frequency"
-  elif [[ -n "$calendar" ]]; then
-    timer_spec="OnCalendar=$calendar"
-    calendar_spec="$calendar"
-  elif [[ "$template" == *"boot"* ]]; then
-    # For boot templates with no specified timing, use the boot template's default
-    # This will rely on the template having the correct timing specifications
-    timer_spec=""
-    frequency_spec=""
-    calendar_spec=""
-  fi
-  
   # Replace standard placeholders
   sed -i "s/\[\[DESCRIPTION\]\]/$description/g" "$temp_timer_file"
-  sed -i "s/\[\[UNIT_NAME\]\]/$unit_name/g" "$temp_timer_file"
   
-  # Check which placeholder style the timer template uses
-  if grep -q "\[\[TIMER_SPEC\]\]" "$temp_timer_file"; then
-    echo "Using [[TIMER_SPEC]] placeholder in timer file"
-    sed -i "s/\[\[TIMER_SPEC\]\]/$timer_spec/g" "$temp_timer_file"
-  else
-    # Check for alternative placeholders
-    if [[ -n "$frequency" ]] && grep -q "\[\[FREQUENCY\]\]" "$temp_timer_file"; then
-      echo "Using [[FREQUENCY]] placeholder in timer file"
-      sed -i "s/\[\[FREQUENCY\]\]/$frequency_spec/g" "$temp_timer_file"
-    fi
-    
-    if [[ -n "$calendar" ]] && grep -q "\[\[CALENDAR\]\]" "$temp_timer_file"; then
-      echo "Using [[CALENDAR]] placeholder in timer file"
-      sed -i "s/\[\[CALENDAR\]\]/$calendar_spec/g" "$temp_timer_file"
-    fi
+  # Add appropriate OnCalendar or OnUnitActiveSec line based on user input
+  if [[ -n "$frequency" ]]; then
+    # Insert the OnUnitActiveSec line before the [Install] section
+    sed -i "/\[Install\]/i OnUnitActiveSec=$frequency" "$temp_timer_file"
+    echo "Added timer frequency: OnUnitActiveSec=$frequency"
+  elif [[ -n "$calendar" ]]; then
+    # Insert the OnCalendar line before the [Install] section
+    sed -i "/\[Install\]/i OnCalendar=$calendar" "$temp_timer_file"
+    echo "Added timer calendar: OnCalendar=$calendar"
+  elif [[ "$template" == *"boot"* ]]; then
+    # For boot templates, add OnBootSec
+    sed -i "/\[Install\]/i OnBootSec=5min" "$temp_timer_file"
+    sed -i "/\[Install\]/i OnUnitActiveSec=1d" "$temp_timer_file"
+    echo "Added boot timer configuration"
   fi
 
   echo "Temporary timer file configured with placeholders"
