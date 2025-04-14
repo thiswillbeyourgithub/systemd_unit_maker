@@ -5,27 +5,6 @@ VERSION="2.1.0"
 
 # Enable for debugging
 # set -x
-#
-# systemd_unit_maker.sh - Creates systemd service and timer units from a command
-#
-# Usage:
-#   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-#                           [--description "DESCRIPTION"] [--template "TEMPLATE"] 
-#                           [--start] [--enable] [--no-timer]
-#
-# Options:
-#   --user          Install for current user (default)
-#   --system        Install system-wide (requires root)
-#   --name          Name for the systemd unit
-#   --command       Command to run in the service
-#   --description   Description of the service (optional)
-#   --no-timer      Do not create a timer unit, only create the service unit
-#   --start         Start the service after creation (default: false)
-#   --enable        Enable and start the timer after creation (default: false)
-#
-# Example:
-#   ./systemd_unit_maker.sh --user --name backup_home --command "tar -czf /tmp/backup.tar.gz /home/user" 
-#                          --description "Daily home backup" --frequency "1d"
 
 # Exit on error
 set -e
