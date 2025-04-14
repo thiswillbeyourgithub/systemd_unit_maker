@@ -171,6 +171,13 @@ echo "Start after creation: $(if $start; then echo "Yes"; else echo "No"; fi)"
 echo "Enable after creation: $(if $enable; then echo "Yes"; else echo "No"; fi)"
 echo "=========================="
 
+# Check if --enable is set but --no-timer is also set (conflicting options)
+if [[ "$enable" == "true" && "$create_timer" == "false" ]]; then
+  echo "Error: Cannot use --enable with --no-timer because there is no timer to enable."
+  echo "Please use either --enable without --no-timer, or remove the --enable flag."
+  exit 1
+fi
+
 # Validate required arguments
 if [[ -z "$unit_name" ]]; then
   echo "Error: Unit name is required (--name)"
