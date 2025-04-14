@@ -10,8 +10,8 @@ VERSION="2.1.0"
 #
 # Usage:
 #   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-#                           [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] 
-#                           [--template "TEMPLATE"] [--start] [--enable] [--no-timer]
+#                           [--description "DESCRIPTION"] [--template "TEMPLATE"] 
+#                           [--start] [--enable] [--no-timer]
 #
 # Options:
 #   --user          Install for current user (default)
@@ -19,9 +19,6 @@ VERSION="2.1.0"
 #   --name          Name for the systemd unit
 #   --command       Command to run in the service
 #   --description   Description of the service (optional)
-#   --frequency     Timer frequency (e.g. "daily" or "1h") (optional)
-#   --calendar      Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
-#                   Note: Use either --frequency OR --calendar.
 #   --no-timer      Do not create a timer unit, only create the service unit
 #   --start         Start the service after creation (default: false)
 #   --enable        Enable and start the timer after creation (default: false)
@@ -54,8 +51,7 @@ systemd_unit_maker.sh - Creates systemd service and timer units from a command
 
 Usage:
   ./systemd_unit_maker.sh [--user|--system] --name UNIT_NAME --command "COMMAND" 
-                         [--description "DESCRIPTION"] [--frequency "FREQUENCY" | --calendar "CALENDAR"] 
-                         [--enable] [--no-timer]
+                         [--description "DESCRIPTION"] [--enable] [--no-timer]
 
 Options:
   --help, -h      Show this help message and exit
@@ -65,9 +61,6 @@ Options:
   --name          Name for the systemd unit
   --command       Command to run in the service
   --description   Description of the service (optional)
-  --frequency     Timer frequency (e.g. "daily" or "1h") (optional)
-  --calendar      Timer calendar specification (e.g. "Mon..Fri *-*-* 08:00:00") (optional)
-                  Note: Use either --frequency OR --calendar.
   --template      Template name to use (optional, default "default")
   --start         Start the service after creation (default: false)
   --enable        Enable and start the timer after creation (default: false)
@@ -75,10 +68,7 @@ Options:
 
 Examples:
   ./systemd_unit_maker.sh --user --name backup_home --command "tar -czf /tmp/backup.tar.gz /home/user" \\
-                         --description "Daily home backup" --frequency "1d"
-  
-  ./systemd_unit_maker.sh --user --name workday_reminder --command "notify-send 'Time to work!'" \\
-                         --description "Workday reminder" --calendar "Mon..Fri *-*-* 08:00:00"
+                         --description "Daily home backup"
 EOF
 }
 
