@@ -253,9 +253,18 @@ if $create_timer; then
 fi
 
 # Determine which editor to use
-editor_cmd="nano"
-if command -v nvim &> /dev/null; then
+if [[ -n "$EDITOR" ]]; then
+  editor_cmd="$EDITOR"
+  echo "Using editor from \$EDITOR: $editor_cmd"
+elif command -v nvim &> /dev/null; then
   editor_cmd="nvim"
+  echo "Using nvim editor"
+elif command -v vi &> /dev/null; then
+  editor_cmd="vi"
+  echo "Using vi editor"
+else
+  editor_cmd="nano"
+  echo "Using nano editor"
 fi
 
 # Open files in editor for manual editing
