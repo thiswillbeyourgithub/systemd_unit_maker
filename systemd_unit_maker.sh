@@ -208,6 +208,9 @@ Requires=${unit_name}.service
 # OnCalendar=*-*-* *:00:00
 # every day at 2 am:
 # OnCalendar=*-*-* 02:00:00
+# Or simply:
+# OnCalendar=weekly
+# OnCalendar=hourly
 
 [Install]
 WantedBy=timers.target
