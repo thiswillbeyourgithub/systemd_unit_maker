@@ -204,6 +204,7 @@ Requires=${unit_name}.service
 [Timer]
 # AccuracySec=1min
 # OnBootSec=5min
+# If the program should "catch up" on missed runs when it's back online:
 # Persistent=true
 # Every hour:
 # OnCalendar=*-*-* *:00:00
