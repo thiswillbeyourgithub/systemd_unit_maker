@@ -3,7 +3,10 @@ Description=[[DESCRIPTION]]
 After=network-online.target
 
 [Service]
-Type=oneshot
+# If we have to wait for the program to finish:
+# Type=oneshot
+# If the program can immediately be considered active:
+# Type=simple
 ExecStart=zsh -c 'source ~/.zshrc && [[COMMAND]]'
 
 [Install]
