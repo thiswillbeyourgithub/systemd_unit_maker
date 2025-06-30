@@ -204,6 +204,7 @@ Requires=${unit_name}.service
 [Timer]
 # AccuracySec=1min
 # OnBootSec=5min
+# Persistent=true
 # Every hour:
 # OnCalendar=*-*-* *:00:00
 # every day at 2 am:
