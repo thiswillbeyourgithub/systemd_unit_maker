@@ -206,7 +206,7 @@ Requires=${unit_name}.service
 # OnBootSec=5min
 # Every hour:
 # OnCalendar=*-*-* *:00:00
-# every day at 2 am
+# every day at 2 am:
 # OnCalendar=*-*-* 02:00:00
 
 [Install]
