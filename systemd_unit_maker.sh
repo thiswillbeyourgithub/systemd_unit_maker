@@ -213,6 +213,9 @@ Requires=${unit_name}.service
 # Or simply:
 # OnCalendar=weekly
 # OnCalendar=hourly
+# Every 10 minutes:
+# OnCalendar=*:0/10
+
 
 [Install]
 WantedBy=timers.target
