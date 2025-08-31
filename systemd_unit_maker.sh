@@ -212,6 +212,7 @@ Requires=${unit_name}.service
 # OnCalendar=*-*-* 02:00:00
 # Or simply:
 # OnCalendar=weekly
+# OnCalendar=daily
 # OnCalendar=hourly
 # Every 10 minutes:
 # OnCalendar=*:0/10
