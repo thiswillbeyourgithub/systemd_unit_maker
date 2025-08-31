@@ -249,12 +249,12 @@ if $create_timer; then
   # Add appropriate timer configuration
   if [[ "$template" == *"boot"* ]]; then
     # For boot templates, add OnBootSec
-    sed -i "/\[Install\]/i OnBootSec=5min" "$temp_timer_file"
-    sed -i "/\[Install\]/i OnUnitActiveSec=1d" "$temp_timer_file"
+    sed -i "/\[Install\]/i OnBootSec=5min\n" "$temp_timer_file"
+    sed -i "/\[Install\]/i OnUnitActiveSec=1d\n" "$temp_timer_file"
     echo "Added boot timer configuration"
   else
     # Add a default daily timer
-    sed -i "/\[Install\]/i OnUnitActiveSec=1d" "$temp_timer_file"
+    sed -i "/\[Install\]/i OnUnitActiveSec=1d\n" "$temp_timer_file"
     echo "Added default daily timer configuration"
   fi
 
