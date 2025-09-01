@@ -218,6 +218,22 @@ Requires=${unit_name}.service
 # OnCalendar=*:0/10
 
 
+# # Security tunables from https://roguesecurity.dev/blog/systemd-hardening
+# ProtectSystem=strict # If set to “strict” the entire file system hierarchy is mounted read-only, except for the API file system subtrees /dev/, /proc/ and /sys/ (protect these directories using PrivateDevices=, ProtectKernelTunables=, ProtectControlGroups=).
+# ReadWritePaths= # makes particular paths writable again
+# PrivateTmp=yes
+# ProtectHome=yes # or ProtectHome=tmpfs # for services that complain about R/W on an unnecessary home dir.
+# ProtectClock=yes #  denies writes to system and hardware clocks
+# ProtectKernelLogs=yes # restricts access to the kernel log buffer
+# ProtectKernelModules=yes # denies explicit module loading
+# RestrictSUIDGUID=yes # prevents the process from setting setuid and setgid bits on files
+# UMask=0077
+# LockPersonality=yes # prevents the execution domain from being changed, which could be useful only for running legacy applications or software designed for other Unix-like systems
+# RestrictRealtime=yes # realtime scheduling is relevant only to applications that require strict timing guarantees, such as industrial control systems, audio/video processing, and scientific simulations
+# MemoryDenyWriteExecute=yes # ensures that the process cannot allocate new memory regions that are both writable and executable, prevents some types of attacks where malicious code is injected into writable memory and then executed; may cause JIT compilers used by JavaScript, Java or .NET to fail
+# DynamicUser=yes # or User=SOMETHINGOTHERTHANROOT
+
+
 [Install]
 WantedBy=timers.target
 EOT
