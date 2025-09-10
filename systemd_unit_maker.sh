@@ -435,7 +435,7 @@ if $enable && $create_timer; then
   echo "  systemctl$(if $user_mode; then echo " --user"; fi) status ${unit_name}.timer"
 elif $create_timer; then
   echo "Timer created but not enabled. To enable and start the timer, run:"
-  echo "  systemctl$(if $user_mode; then echo " --user"; fi) enable --now ${unit_name}.timer"
+  echo "$(if ! $user_mode; then echo "sudo"; fi)  systemctl$(if $user_mode; then echo " --user"; fi) enable --now ${unit_name}.timer"
 fi
 
 unalias systemctl_cmd
