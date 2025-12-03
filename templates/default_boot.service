@@ -8,6 +8,7 @@ After=network-online.target
 # If the program can immediately be considered active:
 # Type=simple
 RemainAfterExit=yes
+# RuntimeMaxSec=Xmin
 ExecStart=[[COMMAND]]
 
 [Install]
